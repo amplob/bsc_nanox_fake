@@ -42,9 +42,9 @@ using namespace nanos;
 
 //new code .h
 
-void print_dependences(nanos_data_access_t *data_accesses);
+void print_dependences(size_t num_data_accesses, nanos_data_access_t *data_accesses);
 
-void logica_marc (nanos_const_wd_definition_t *const_data_ext, nanos_wd_dyn_props_t *dyn_props, 
+void logica_control (nanos_const_wd_definition_t *const_data_ext, nanos_wd_dyn_props_t *dyn_props, 
 	size_t data_size, void * data, size_t num_data_accesses, nanos_data_access_t *data_accesses,
         nanos_copy_data_t *copies, nanos_region_dimension_internal_t *dimensions, nanos_translate_args_t translate_args );
 
@@ -52,22 +52,27 @@ void logica_marc (nanos_const_wd_definition_t *const_data_ext, nanos_wd_dyn_prop
 
 //new code .c
 
-void print_dependences(nanos_data_access_t *data_accesses) 
+void print_dependences(size_t num_data_accesses, nanos_data_access_t *data_accesses) 
 {
-    printf("Testing: ");
-    printf("input value: %d\n",data_accesses[0].flags.input);
-    printf("Testing: ");
-    printf("output value: %d\n",data_accesses[0].flags.output);
-    printf("Testing: ");
-    printf("can_rename value: %d\n",data_accesses[0].flags.can_rename);
-    printf("Testing: ");
-    printf("concurrent value: %d\n",data_accesses[0].flags.concurrent);
-    printf("Testing: ");
-    printf("commutative value: %d\n",data_accesses[0].flags.commutative);
+    unsigned int i;
+    for (i=0; i<num_data_accesses; ++i) {
+	printf("Testing: ");
+// 	printf("variable: %p\n",data_accesses[i].address);
+	printf("Testing: ");
+// 	printf("input value: %d\n",data_accesses[i].flags.input);
+	printf("Testing: ");
+// 	printf("output value: %d\n",data_accesses[i].flags.output);
+	printf("Testing: ");
+// 	printf("can_rename value: %d\n",data_accesses[i].flags.can_rename);
+	printf("Testing: ");
+// 	printf("concurrent value: %d\n",data_accesses[i].flags.concurrent);
+	printf("Testing: ");
+// 	printf("commutative value: %d\n",data_accesses[i].flags.commutative);
+    }
 
 }
 
-void logica_marc (nanos_const_wd_definition_t *const_data_ext, nanos_wd_dyn_props_t *dyn_props, 
+void logica_control (nanos_const_wd_definition_t *const_data_ext, nanos_wd_dyn_props_t *dyn_props, 
 	size_t data_size, void * data, size_t num_data_accesses, nanos_data_access_t *data_accesses,
         nanos_copy_data_t *copies, nanos_region_dimension_internal_t *dimensions, nanos_translate_args_t translate_args ) 
 {
@@ -78,14 +83,15 @@ void logica_marc (nanos_const_wd_definition_t *const_data_ext, nanos_wd_dyn_prop
     void * ptr = data_accesses[i].address;
     unsigned long element_size = data_accesses[i].dimensions[0].size;
     unsigned long elements = data_accesses[i].dimensions[0].accessed_length/element_size;
-    if (data_accesses[i].flags.input & data_accesses[i].flags.output) replay_inout_task(parName, ptr, element_size, elements);
+    if (data_accesses[i].flags.commutative) replay_commutative_task(parName, ptr, element_size, elements);
+    else if (data_accesses[i].flags.input & data_accesses[i].flags.output) replay_inout_task(parName, ptr, element_size, elements);
     else if (data_accesses[i].flags.input) replay_input_task(parName, ptr, element_size, elements);
     else if (data_accesses[i].flags.output) replay_output_task(parName, ptr, element_size, elements);
   }
   
   printf("Testing: ");
   printf("task: %s\n", parName);
-  print_dependences(data_accesses);
+  print_dependences(num_data_accesses, data_accesses);
   //printf("int %lu\n",sizeof(int)); 
   //printf("unsigned long %lu\n",sizeof(unsigned long));
 }
@@ -335,7 +341,7 @@ NANOS_API_DEF( nanos_err_t, nanos_create_wd_and_run_compact, ( nanos_const_wd_de
   
   replay_start_task();
   
-  logica_marc(const_data_ext, dyn_props, data_size, data, num_data_accesses, data_accesses, copies, dimensions, translate_args);
+  logica_control(const_data_ext, dyn_props, data_size, data, num_data_accesses, data_accesses, copies, dimensions, translate_args);
   
 
   
